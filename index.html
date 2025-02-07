@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Handwriting Recognition</title>
+    <style>
+        canvas {
+            border: 2px solid black;
+            margin: 10px;
+        }
+        .controls {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <button onclick="clearCanvas()">Clear</button>
+        <button onclick="recognize()">Recognize</button>
+    </div>
+    <canvas id="drawingCanvas" width="280" height="280"></canvas>
+    <div id="result"></div>
+
+    <script>
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        
+        // Set white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Set drawing style
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 20;
+        ctx.lineCap = 'round';
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        function startDrawing(e) {
+            isDrawing = true;
+            draw(e);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'black';
+            document.getElementById('result').textContent = '';
+        }
+
+        function recognize() {
+            const imageData = canvas.toDataURL('image/png');
+            fetch('/recognize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({image: imageData})
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').textContent = data.result;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').textContent = 'Error recognizing digit';
+            });
+        }
+    </script>
+</body>
+</html>
